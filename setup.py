@@ -11,7 +11,7 @@ setup(
     author_email='info@pragmaticmates.com',
     maintainer='Pragmatic Mates',
     maintainer_email='info@pragmaticmates.com',
-    url='https://github.com/PragmaticMates/django-clever-selects',
+    url='https://github.com/Openscop/django-clever-selects',
     packages=[
         'clever_selects',
         'clever_selects.templatetags'

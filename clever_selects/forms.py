@@ -4,6 +4,7 @@ import json
 
 from django import forms
 from django.contrib.auth.models import AnonymousUser
+from django.contrib.sessions.middleware import SessionMiddleware
 from django.core.exceptions import ObjectDoesNotExist
 
 try:
@@ -13,6 +14,7 @@ except:
 
 from django.core.validators import EMPTY_VALUES
 from django.db import models
+from django.forms.fields import MultipleChoiceField
 from django.http.request import HttpRequest
 from django.utils.encoding import smart_str, force_text
 
@@ -86,10 +88,13 @@ class ChainedChoicesMixin(object):
                     if field_value is None:
                         field_value = getattr(self, '%s' % field_name, None)
 
-                field.choices = [('', field.empty_label)]
+                field.choices = []
+                # only add null choice on optional single selects
+                if not isinstance(field, MultipleChoiceField) and field.required:
+                    field.choices += [('', field.empty_label)]
 
                 # check that parent_value is valid
-                if parent_value:
+                if parent_value or True:
                     parent_value = getattr(parent_value, 'pk', parent_value)
 
                     url = force_text(field.ajax_url)
@@ -118,8 +123,10 @@ class ChainedChoicesMixin(object):
                     else:
                         fake_request.user = AnonymousUser()
 
-                    # Get the response
-                    response = url_callable(fake_request)
+                    # These 3 lines won't work with Django 1.10 new middleware style
+                    SessionMiddleware().process_request(fake_request)
+                    fake_request.session['extradata'] = getattr(self, 'extradata', None)
+                    response = SessionMiddleware().process_response(fake_request, url_callable(fake_request))
 
                     # Apply the data (if it's returned)
                     if smart_str(response.content):
@@ -153,8 +160,6 @@ class ChainedChoicesMixin(object):
         return result
 
     def get_children_field_names(self, parent_name):
-        if parent_name in EMPTY_VALUES:
-            return []
         result = []
         for field_name in self.fields:
             field = self.fields[field_name]
