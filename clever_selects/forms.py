@@ -4,21 +4,19 @@ import json
 
 from django import forms
 from django.contrib.auth.models import AnonymousUser
-from django.contrib.sessions.middleware import SessionMiddleware
 from django.core.exceptions import ObjectDoesNotExist
-
-try:
-    from django.urls import reverse, resolve
-except:
-    from django.core.urlresolvers import reverse, resolve
-
 from django.core.validators import EMPTY_VALUES
 from django.db import models
 from django.forms.fields import MultipleChoiceField
 from django.http.request import HttpRequest
-from django.utils.encoding import smart_str, force_text
+from django.utils.encoding import force_text, smart_str
 
-from .form_fields import ChainedChoiceField, ChainedModelChoiceField, ChainedModelMultipleChoiceField
+from .form_fields import (ChainedChoiceField, ChainedModelChoiceField, ChainedModelMultipleChoiceField)
+
+try:
+    from django.urls import resolve
+except:
+    from django.core.urlresolvers import resolve
 
 
 class ChainedChoicesMixin(object):
@@ -123,20 +121,17 @@ class ChainedChoicesMixin(object):
                     else:
                         fake_request.user = AnonymousUser()
 
-                    # These 3 lines won't work with Django 1.10 new middleware style
-                    SessionMiddleware().process_request(fake_request)
-                    fake_request.session['extradata'] = getattr(self, 'extradata', None)
-                    response = SessionMiddleware().process_response(fake_request, url_callable(fake_request))
+                    # Get the response
+                    response = url_callable(fake_request)
 
                     # Apply the data (if it's returned)
                     if smart_str(response.content):
                         try:
                             field.choices += json.loads(smart_str(response.content))
                         except ValueError:
-                            raise ValueError('Data returned from request (url={url}, params={params}) could not be deserialized to Python object'.format(
-                                url=url,
-                                params=params
-                            ))
+                            raise ValueError(
+                                'Data returned from request (url={url}, params={params}) could not be deserialized to Python object'.
+                                format(url=url, params=params))
 
                 field.initial = field_value
 

@@ -12,11 +12,11 @@ from django.http import HttpResponse
 from django.utils.cache import add_never_cache_headers
 from django.views.generic.base import View
 
-
 EMPTY_VALUES = BASE_EMPTY_VALUES + ('None',)
 
 
 class ChainedSelectFormViewMixin(object):
+
     def get_form_kwargs(self):
         kwargs = super(ChainedSelectFormViewMixin, self).get_form_kwargs()
         kwargs.update({'user': self.request.user})
